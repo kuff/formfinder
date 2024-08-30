@@ -8,9 +8,7 @@ import requests
 from requests.exceptions import ConnectionError, Timeout
 import time
 
-def initialize_diffusion():
-    max_retries = 10
-    retry_delay = 5
+def initialize_diffusion(max_retries, retry_delay):
 
     for attempt in range(max_retries):
         try:

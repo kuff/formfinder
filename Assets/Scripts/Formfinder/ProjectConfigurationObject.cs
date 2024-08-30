@@ -45,5 +45,12 @@ namespace Formfinder
         [Tooltip(
             "Additional paths to be added to the Python sys.path. Each path should be relative to the project root.")]
         public string[] additionalPythonPaths;
+
+        [Header("Diffusion Configuration")]
+        [Tooltip("Maximum number of retries for initializing the diffusion model")]
+        public int maxDiffusionRetries = 10;
+
+        [Tooltip("Delay in seconds between retries for initializing the diffusion model")]
+        public float diffusionRetryDelay = 5f;
     }
 }

@@ -134,6 +134,7 @@ if sys.stderr is None:
                         Debug.Log($"Additional Python path: {fullPath}");
                     }
 
+                    sys.modules.pop(moduleName, null); // Remove the module, otherwise script changes seem to not take effect
                     return Py.Import(moduleName);
                 }
             }

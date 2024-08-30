@@ -39,7 +39,8 @@ namespace Formfinder
 
             // Initialize diffusion
             Debug.Log("Initializing diffusion...");
-            var stream = diffusionTest.initialize_diffusion();
+            var config = ProjectConfig.InstanceConfig;
+            var stream = diffusionTest.initialize_diffusion(max_retries: config.maxDiffusionRetries, retry_delay: config.diffusionRetryDelay);
             Debug.Log("Diffusion initialized successfully");
 
             // Generate image

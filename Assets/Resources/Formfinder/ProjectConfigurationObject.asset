@@ -17,3 +17,10 @@ MonoBehaviour:
   mainResourcesPath: Assets/Resources/Colorcrush
   mainScenesPath: Assets/Scenes
   mainScriptsPath: Assets/Scripts/Colorcrush
+  pythonEnvFolderName: PythonEnv
+  virtualEnvFolderName: env
+  pythonDllName: python310.dll
+  additionalPythonPaths: []
+  maxDiffusionRetries: 15
+  diffusionRetryDelay: 4
+  defaultDiffusionPrompt: A beautiful landscape with mountains and a lake
