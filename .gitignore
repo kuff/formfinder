@@ -87,3 +87,6 @@ env/
 venv/
 .env/
 .venv/
+
+# Top-level "engines" directory
+engines/

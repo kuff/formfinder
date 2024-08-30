@@ -66,6 +66,9 @@ namespace Formfinder
                 Environment.SetEnvironmentVariable("PYTHONHOME", pythonHome);
                 Environment.SetEnvironmentVariable("PYTHONPATH", pythonPath);
 
+                Debug.Log($"PYTHONHOME: {Environment.GetEnvironmentVariable("PYTHONHOME")}");
+                Debug.Log($"PYTHONPATH: {Environment.GetEnvironmentVariable("PYTHONPATH")}");
+
                 var pythonDll = Path.Combine(pythonHome, config.pythonDllName);
                 if (!File.Exists(pythonDll)) throw new FileNotFoundException($"Python DLL not found: {pythonDll}");
                 Runtime.PythonDLL = pythonDll;
@@ -73,6 +76,28 @@ namespace Formfinder
                 PythonEngine.Initialize();
                 _isInitialized = true;
                 Debug.Log("Python environment initialized successfully.");
+
+                // Monkey patch sys.stdout and sys.stderr if they are None
+                using (Py.GIL())
+                {
+                    var patchCode = @"
+import sys
+import io
+
+class NullWriter(io.StringIO):
+    def write(self, _):
+        pass
+    def flush(self):
+        pass
+
+if sys.stdout is None:
+    sys.stdout = NullWriter()
+if sys.stderr is None:
+    sys.stderr = NullWriter()
+";
+                    PythonEngine.Exec(patchCode);
+                    Debug.Log("Python standard streams monkey-patched successfully.");
+                }
             }
             catch (Exception ex)
             {
@@ -99,11 +124,14 @@ namespace Formfinder
                     var pythonPath = Path.Combine(projectRoot, config.pythonEnvFolderName);
                     sys.path.append(pythonPath);
 
+                    Debug.Log($"Python path: {pythonPath}");
+
                     // Add additional Python paths from configuration
                     foreach (var additionalPath in config.additionalPythonPaths)
                     {
                         var fullPath = Path.Combine(projectRoot, additionalPath);
                         sys.path.append(fullPath);
+                        Debug.Log($"Additional Python path: {fullPath}");
                     }
 
                     return Py.Import(moduleName);
