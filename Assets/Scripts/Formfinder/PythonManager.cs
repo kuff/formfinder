@@ -58,14 +58,15 @@ namespace Formfinder
         {
             try
             {
+                var config = ProjectConfig.InstanceConfig;
                 var projectRoot = Directory.GetParent(Application.dataPath)!.FullName;
-                var pythonHome = Path.Combine(projectRoot, "PythonEnv", "env");
-                var pythonPath = Path.Combine(projectRoot, "PythonEnv");
+                var pythonHome = Path.Combine(projectRoot, config.pythonEnvFolderName, config.virtualEnvFolderName);
+                var pythonPath = Path.Combine(projectRoot, config.pythonEnvFolderName);
 
                 Environment.SetEnvironmentVariable("PYTHONHOME", pythonHome);
                 Environment.SetEnvironmentVariable("PYTHONPATH", pythonPath);
 
-                var pythonDll = Path.Combine(pythonHome, "python310.dll");
+                var pythonDll = Path.Combine(pythonHome, config.pythonDllName);
                 if (!File.Exists(pythonDll)) throw new FileNotFoundException($"Python DLL not found: {pythonDll}");
                 Runtime.PythonDLL = pythonDll;
 
@@ -93,9 +94,17 @@ namespace Formfinder
                 using (Py.GIL())
                 {
                     dynamic sys = Py.Import("sys");
+                    var config = ProjectConfig.InstanceConfig;
                     var projectRoot = Directory.GetParent(Application.dataPath)!.FullName;
-                    var pythonPath = Path.Combine(projectRoot, "PythonEnv");
+                    var pythonPath = Path.Combine(projectRoot, config.pythonEnvFolderName);
                     sys.path.append(pythonPath);
+
+                    // Add additional Python paths from configuration
+                    foreach (var additionalPath in config.additionalPythonPaths)
+                    {
+                        var fullPath = Path.Combine(projectRoot, additionalPath);
+                        sys.path.append(fullPath);
+                    }
 
                     return Py.Import(moduleName);
                 }
