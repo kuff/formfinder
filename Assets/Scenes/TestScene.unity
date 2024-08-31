@@ -153,6 +153,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   outputText: {fileID: 1200625076}
   diffusionImage: {fileID: 2086535529}
+  mainCamera: {fileID: 963194227}
 --- !u!4 &114347307
 Transform:
   m_ObjectHideFlags: 0
@@ -564,8 +565,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
+  m_fontSize: 12
+  m_fontSizeBase: 12
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

@@ -3,6 +3,7 @@
 #region
 
 using System.Collections;
+using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,6 +16,7 @@ namespace Formfinder
     {
         [SerializeField] private TextMeshProUGUI outputText;
         [SerializeField] private Image diffusionImage;
+        [SerializeField] private Camera mainCamera;
 
         private dynamic _diffusionTest;
         private dynamic _stream;
@@ -29,7 +31,7 @@ namespace Formfinder
         {
             if (Input.GetMouseButtonDown(0))
                 StartCoroutine(GenerateDiffusionImage());
-            else if (Input.GetMouseButtonDown(1)) HideImage();
+            else if (Input.GetMouseButtonDown(1) || Input.mouseScrollDelta.y != 0) HideImage();
         }
 
         private void InitializeDiffusion()
@@ -65,8 +67,28 @@ namespace Formfinder
 
             outputText.text = "Generating image...";
 
-            const string prompt = "A beautiful landscape with mountains and a lake";
-            byte[] imageBytes = _diffusionTest.generate_image(_stream, prompt);
+            const string prompt = "A modern villa surrounded by a lush garden";
+
+            // Capture the current camera view
+            RenderTexture tempRT = new RenderTexture(512, 512, 24);
+            mainCamera.targetTexture = tempRT;
+            mainCamera.Render();
+            RenderTexture.active = tempRT;
+
+            Texture2D screenshot = new Texture2D(512, 512, TextureFormat.RGB24, false);
+            screenshot.ReadPixels(new Rect(0, 0, 512, 512), 0, 0);
+            screenshot.Apply();
+
+            // Reset camera to render to the screen
+            mainCamera.targetTexture = null;
+            RenderTexture.active = null;
+            Destroy(tempRT);
+
+            // Convert texture to PNG byte array
+            byte[] screenshotBytes = screenshot.EncodeToPNG();
+
+            // Generate image using the screenshot data
+            byte[] imageBytes = _diffusionTest.generate_image(_stream, prompt, screenshotBytes);
 
             if (imageBytes == null || imageBytes.Length == 0)
             {
