@@ -16,64 +16,77 @@ namespace Formfinder
         [SerializeField] private TextMeshProUGUI outputText;
         [SerializeField] private Image diffusionImage;
 
+        private dynamic diffusionTest;
+        private dynamic stream;
+
         private void Start()
         {
-            StartCoroutine(GenerateDiffusionImage());
+            InitializeDiffusion();
+            diffusionImage.enabled = false;
+        }
+
+        private void Update()
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                StartCoroutine(GenerateDiffusionImage());
+            }
+            else if (Input.GetMouseButtonDown(1))
+            {
+                HideImage();
+            }
+        }
+
+        private void InitializeDiffusion()
+        {
+            diffusionTest = PythonManager.GetPythonModule("diffusion_test");
+
+            if (diffusionTest == null)
+            {
+                outputText.text = "Error: Failed to import Python module";
+                return;
+            }
+
+            Debug.Log("Initializing diffusion...");
+            var config = ProjectConfig.InstanceConfig;
+            stream = diffusionTest.initialize_diffusion(max_retries: config.maxDiffusionRetries, retry_delay: config.diffusionRetryDelay);
+            Debug.Log("Diffusion initialized successfully!");
+        }
+
+        private void HideImage()
+        {
+            diffusionImage.enabled = false;
+            outputText.text = "Image hidden. Generate a new image to show.";
         }
 
         private IEnumerator GenerateDiffusionImage()
         {
-            Debug.Log("Starting diffusion image generation process...");
-
-            // Get the Python module using PythonManager
-            var diffusionTest = PythonManager.GetPythonModule("diffusion_test");
-
-            if (diffusionTest == null)
+            if (diffusionTest == null || stream == null)
             {
-                Debug.LogError("Failed to import diffusion_test module");
-                outputText.text = "Error: Failed to import Python module";
+                outputText.text = "Error: Diffusion not initialized";
                 yield break;
             }
 
-            Debug.Log("Successfully imported diffusion_test module");
+            outputText.text = "Generating image...";
 
-            // Initialize diffusion
-            Debug.Log("Initializing diffusion...");
-            var config = ProjectConfig.InstanceConfig;
-            var stream = diffusionTest.initialize_diffusion(max_retries: config.maxDiffusionRetries, retry_delay: config.diffusionRetryDelay);
-            Debug.Log("Diffusion initialized successfully");
-
-            // Generate image
             var prompt = "A beautiful landscape with mountains and a lake";
-            Debug.Log($"Generating image with prompt: '{prompt}'");
             byte[] imageBytes = diffusionTest.generate_image(stream, prompt);
-            Debug.Log("Image generation completed");
 
             if (imageBytes == null || imageBytes.Length == 0)
             {
-                Debug.LogError("Failed to generate diffusion image: Image bytes are null or empty");
                 outputText.text = "Error: Failed to generate diffusion image";
                 yield break;
             }
 
-            Debug.Log("Creating texture from image bytes...");
-            // Create a texture from the image bytes
             var texture = new Texture2D(2, 2);
             texture.LoadImage(imageBytes);
-            Debug.Log("Texture created successfully");
 
-            Debug.Log("Creating sprite from texture...");
-            // Create a sprite from the texture
             var sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
-            Debug.Log("Sprite created successfully");
 
-            Debug.Log("Setting sprite to Image component...");
-            // Set the sprite to the Image component
             diffusionImage.sprite = sprite;
-            Debug.Log("Sprite set to Image component");
+            diffusionImage.enabled = true;
 
             outputText.text = "Diffusion image generated successfully!";
-            Debug.Log("Diffusion image generation process completed successfully");
 
             yield return null;
         }
