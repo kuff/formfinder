@@ -16,8 +16,8 @@ namespace Formfinder
         [SerializeField] private TextMeshProUGUI outputText;
         [SerializeField] private Image diffusionImage;
 
-        private dynamic diffusionTest;
-        private dynamic stream;
+        private dynamic _diffusionTest;
+        private dynamic _stream;
 
         private void Start()
         {
@@ -28,20 +28,15 @@ namespace Formfinder
         private void Update()
         {
             if (Input.GetMouseButtonDown(0))
-            {
                 StartCoroutine(GenerateDiffusionImage());
-            }
-            else if (Input.GetMouseButtonDown(1))
-            {
-                HideImage();
-            }
+            else if (Input.GetMouseButtonDown(1)) HideImage();
         }
 
         private void InitializeDiffusion()
         {
-            diffusionTest = PythonManager.GetPythonModule("diffusion_test");
+            _diffusionTest = PythonManager.GetPythonModule("diffusion_test");
 
-            if (diffusionTest == null)
+            if (_diffusionTest == null)
             {
                 outputText.text = "Error: Failed to import Python module";
                 return;
@@ -49,7 +44,8 @@ namespace Formfinder
 
             Debug.Log("Initializing diffusion...");
             var config = ProjectConfig.InstanceConfig;
-            stream = diffusionTest.initialize_diffusion(max_retries: config.maxDiffusionRetries, retry_delay: config.diffusionRetryDelay);
+            _stream = _diffusionTest.initialize_diffusion(max_retries: config.maxDiffusionRetries,
+                retry_delay: config.diffusionRetryDelay);
             Debug.Log("Diffusion initialized successfully!");
         }
 
@@ -61,7 +57,7 @@ namespace Formfinder
 
         private IEnumerator GenerateDiffusionImage()
         {
-            if (diffusionTest == null || stream == null)
+            if (_diffusionTest == null || _stream == null)
             {
                 outputText.text = "Error: Diffusion not initialized";
                 yield break;
@@ -69,8 +65,8 @@ namespace Formfinder
 
             outputText.text = "Generating image...";
 
-            var prompt = "A beautiful landscape with mountains and a lake";
-            byte[] imageBytes = diffusionTest.generate_image(stream, prompt);
+            const string prompt = "A beautiful landscape with mountains and a lake";
+            byte[] imageBytes = _diffusionTest.generate_image(_stream, prompt);
 
             if (imageBytes == null || imageBytes.Length == 0)
             {

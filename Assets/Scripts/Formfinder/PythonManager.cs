@@ -47,7 +47,7 @@ namespace Formfinder
 
         private void OnApplicationQuit()
         {
-            if (_isInitialized)
+            if (_isInitialized && !Application.isEditor)
             {
                 PythonEngine.Shutdown();
                 Debug.Log("Python engine shut down");
@@ -56,6 +56,12 @@ namespace Formfinder
 
         private void InitializePythonEnvironment()
         {
+            if (_isInitialized && Application.isEditor)
+            {
+                Debug.Log("Python environment already initialized. Skipping reinitialization in editor.");
+                return;
+            }
+
             try
             {
                 var config = ProjectConfig.InstanceConfig;
@@ -73,14 +79,23 @@ namespace Formfinder
                 if (!File.Exists(pythonDll)) throw new FileNotFoundException($"Python DLL not found: {pythonDll}");
                 Runtime.PythonDLL = pythonDll;
 
-                PythonEngine.Initialize();
+                if (!PythonEngine.IsInitialized)
+                {
+                    PythonEngine.Initialize();
+                    Debug.Log("Python engine initialized.");
+                }
+                else
+                {
+                    Debug.Log("Python engine already initialized. Skipping initialization.");
+                }
+
                 _isInitialized = true;
                 Debug.Log("Python environment initialized successfully.");
 
                 // Monkey patch sys.stdout and sys.stderr if they are None
                 using (Py.GIL())
                 {
-                    var patchCode = @"
+                    const string patchCode = @"
 import sys
 import io
 
@@ -134,7 +149,8 @@ if sys.stderr is None:
                         Debug.Log($"Additional Python path: {fullPath}");
                     }
 
-                    sys.modules.pop(moduleName, null); // Remove the module, otherwise script changes seem to not take effect
+                    sys.modules.pop(moduleName,
+                        null); // Remove the module, otherwise script changes seem to not take effect
                     return Py.Import(moduleName);
                 }
             }
