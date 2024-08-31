@@ -7,6 +7,7 @@ import io
 import requests
 from requests.exceptions import ConnectionError, Timeout
 import time
+from PIL import Image
 
 def initialize_diffusion(max_retries, retry_delay):
 
@@ -23,9 +24,8 @@ def initialize_diffusion(max_retries, retry_delay):
             # Wrap the pipeline in StreamDiffusion
             stream = StreamDiffusion(
                 pipe,
-                t_index_list=[0, 16, 32, 45],
+                t_index_list=[32, 45],
                 torch_dtype=torch.float16,
-                cfg_type="none",
             )
 
             # Merge LCM and use Tiny VAE for acceleration
@@ -35,11 +35,7 @@ def initialize_diffusion(max_retries, retry_delay):
                                                          local_files_only=False, 
                                                          resume_download=True).to(device=pipe.device, dtype=pipe.dtype)
 
-            # Enable TensorRT acceleration
-            """from streamdiffusion.acceleration.tensorrt import accelerate_with_tensorrt
-            stream = accelerate_with_tensorrt(
-                stream, "engines", max_batch_size=2,
-            )"""
+            # Enable acceleration
             pipe.enable_xformers_memory_efficient_attention()
 
             return stream
@@ -52,16 +48,20 @@ def initialize_diffusion(max_retries, retry_delay):
                 print("Max retries reached. Unable to initialize diffusion.")
                 raise e
 
-def generate_image(stream, prompt):
-    # Prepare the stream
-    stream.prepare(prompt)
+def generate_image(stream, prompt, init_image_bytes):
+    # Prepare the stream with negative prompts
+    negative_prompt = "cartoon, drawing, cgart, ugly, low quality, bad anatomy, deformed"
+    stream.prepare(prompt, negative_prompt=negative_prompt)
 
-    # Warmup
-    for _ in range(4):
-        stream()
+    # Convert init_image_bytes to PIL Image
+    init_image = Image.open(io.BytesIO(init_image_bytes)).resize((512, 512))
+
+    # Warmup (increase iterations)
+    for _ in range(5):
+        stream(init_image)
 
     # Generate the image
-    x_output = stream.txt2img()
+    x_output = stream(init_image)
     image = postprocess_image(x_output, output_type="pil")[0]
 
     # Convert PIL image to bytes
