@@ -49,14 +49,15 @@ def initialize_diffusion(max_retries, retry_delay):
                 raise e
 
 def generate_image(stream, prompt, init_image_bytes):
-    # Prepare the stream
-    stream.prepare(prompt)
+    # Prepare the stream with negative prompts
+    negative_prompt = "cartoon, drawing, cgart, ugly, low quality, bad anatomy, deformed"
+    stream.prepare(prompt, negative_prompt=negative_prompt)
 
     # Convert init_image_bytes to PIL Image
     init_image = Image.open(io.BytesIO(init_image_bytes)).resize((512, 512))
 
     # Warmup (increase iterations)
-    for _ in range(5):  # Increased from 2 to 5
+    for _ in range(5):
         stream(init_image)
 
     # Generate the image
